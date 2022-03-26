@@ -44,6 +44,16 @@
     padding-bottom: 2%;
 }
 
+.svg{
+    /* background-color: yellow; */
+    margin: 2%;
+    /* padding-left: 40px; */
+}
+
+#scatter-plot-one{
+    background-color: #2649D8;
+}
+
 @media screen  {
     button {
         width: 166px;
@@ -152,7 +162,6 @@
         flex-flow: wrap;
         flex-direction: row;
         justify-content: center;
-        /* padding-top: 8%; */
         padding-bottom: 3%;
     }
     .sectionTwo{
