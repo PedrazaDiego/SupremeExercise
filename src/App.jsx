@@ -8,14 +8,15 @@ import Data from './components/Data';
 import { sharedData } from './shared_data';
 
 
-function App () {
+const App = () => {
 
   const [justiceData, setJusticeData] = useState([])
+  const [fullData, setFullData] = useState([])
+  const [isLoading, setLoading] = useState(true)    
 
-  const searchLength = 50
+  const searchLength = 118
   const newDate = new Date()
   const currentDate = `${newDate.getFullYear()}${String(newDate.getMonth()+1).padStart(2,0)}${newDate.getDate()-1}`
-  let matrix = []
 
   useEffect(() => {
     getJustices()
@@ -23,10 +24,19 @@ function App () {
 
   const getJustices = async() => {
     //API Justices Call
-    const response = await axios.get(`${sharedData.justiceEndPoint}`)
+    const response = await axios.get(`${sharedData.justiceEndPoint}`)  
+    setFullData(response.data.slice(-searchLength)) 
 
     //Length of data being grabbed from the call
-    const justicesArr = response.data.slice(-searchLength)
+    let justicesArr =  [] 
+    if(searchLength <= 9){
+      justicesArr =  response.data.slice(-searchLength)
+    }else if(searchLength > 9){
+      justicesArr =  response.data.slice(-searchLength)
+    }
+
+    //Get a unique set of parties
+    const parties = new Set(justicesArr.map(e => e.nominating_party))
 
     //Fix dates to API call cases based on the justices' search
     const dates = justicesArr.map(e => e.start_date.substring(0, 10).replaceAll('-', ''))
@@ -36,13 +46,34 @@ function App () {
     //Currently it is not taking account of cases with a argument_date of null
     let column = []
     const casesArr = Object.values(casesResponse.data)
-    for(let i = 0; i < justicesArr.length; i++){
-      let res = casesArr.filter((element, index) => element.argument_date > justicesArr[i].start_date)
-      column.push([justicesArr[i].name, justicesArr[i].start_date.substring(0, 10), i + 1, res.length])
-      setJusticeData(column)
-      // matrix.push(column)
-      // setJusticeData(matrix)
+
+    //Conditionally selects between current and past justices
+    //If searchLength is less or equal to 9 are the current justices
+    if(searchLength <= 9){
+      for(let i = 0; i < justicesArr.length; i++){
+        let res = casesArr.filter((element, index) => element.argument_date > justicesArr[i].start_date)
+        column.push([justicesArr[i].name, justicesArr[i].start_date.substring(0, 4).replaceAll('-', ''), i + 1, res.length, justicesArr[i].nominating_party])
+        setLoading(false)
+      }
+    //If searchLength is over 9 it returns info from past and current justices
+    } else if(searchLength > 9){
+      for(let i = 0; i < justicesArr.length - 9; i++){
+        let res = casesArr.filter((element, index) => element.argument_date > justicesArr[i].start_date && element.argument_date < justicesArr[i].finish_date)
+        column.push([justicesArr[i].name, justicesArr[i].start_date.substring(0, 4).replaceAll('-', ''), i + 1, res.length, justicesArr[i].nominating_party ])
+        setLoading(false)
+      }
+      //Since the justices are being filtered by start_date and finish_date, the current justices whom don't have finish_date are pushed after the first assignment
+      //This block pushes the current justices to the past justices array
+      let currentJustices = response.data.slice(-9)
+      for(let i = 0; i < 9; i++){
+        let res = casesArr.filter((element, index) => element.argument_date > currentJustices[i].start_date)
+        column.push([currentJustices[i].name, currentJustices[i].start_date.substring(0, 4).replaceAll('-', ''), (justicesArr.length - 9) + i, res.length, currentJustices[i].nominating_party])
+      }
+      
     }
+    //Sets state to pass as props
+    setJusticeData(column)
+
   }
 
   if(!justiceData){
@@ -53,8 +84,10 @@ function App () {
       <div className='content'>
         <Header sharedData={sharedData}></Header>
         <Section sharedData={sharedData}></Section>
-        <h2 className='sub-title'>Data</h2>
-        <Data justiceData={justiceData} searchLength={searchLength}></Data>
+        <div className='inter-section'>
+          <h2 className='sub-title'></h2> 
+        </div>
+        {isLoading ? <></> : <Data justiceData={justiceData} searchLength={searchLength} fullData={fullData}></Data>}
         <Footer></Footer>
       </div>
     );

@@ -47,12 +47,8 @@
 .svg{
     /* background-color: yellow; */
     margin: 2%;
-    /* padding-left: 40px; */
 }
 
-#scatter-plot-one{
-    background-color: #2649D8;
-}
 
 @media screen  {
     button {
@@ -204,5 +200,8 @@
         align-items: center;
         font-size: 28px;
         color: #808080;
+    }
+    .scatter-text{
+        font-size: 14px;
     }
 }
